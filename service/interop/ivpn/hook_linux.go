@@ -70,9 +70,9 @@ func (i *InteropIvpn) doReconcileCompatibilityState(wc *mgr.WorkerCtx, hubInfo *
 //
 // To preserve the kill-switch behavior while allowing SPN/ST reverse-NAT, Portmaster
 // inserts a narrow exception rule before the wg-quick drop:
-//   - nft path (preferred):
+//   - nft path (when wg-quick-wgivpn table exists, i.e. non-snap IVPN):
 //     `iifname "lo" ip daddr <WG_LOCAL_IP> fib saddr type != local accept`
-//   - iptables fallback (when nft is unavailable):
+//   - iptables path (snap IVPN or systems without nft):
 //     `-t raw -I PREROUTING 1 -d <WG_LOCAL_IP>/32 -i lo -m addrtype ! --src-type LOCAL -j ACCEPT`
 //
 // Rule lifecycle is managed here:
@@ -129,7 +129,7 @@ func (i *InteropIvpn) ensureWgCompatRule(wc *mgr.WorkerCtx) error {
 		return nil
 	}
 
-	if nftPath != "" {
+	if nftPath != "" && nftTableExists(nftPath, nftTableWgQuickIvpn) {
 		// Insert rule by executing command:
 		// 		sudo nft --echo --json insert rule ip wg-quick-wgivpn preraw iifname "lo" ip daddr 1.2.3.4 fib saddr type != local accept comment "portmaster-spn-lo-rnat"
 		out, err := exec.Command(nftPath, "--echo", "--json", "insert", "rule", "ip", nftTableWgQuickIvpn, "preraw",
@@ -171,6 +171,11 @@ func (i *InteropIvpn) ensureWgCompatRule(wc *mgr.WorkerCtx) error {
 	}
 
 	return nil
+}
+
+// nftTableExists reports whether an nft table with the given name exists in the "ip" family.
+func nftTableExists(nftPath, table string) bool {
+	return exec.Command(nftPath, "list", "table", "ip", table).Run() == nil
 }
 
 // parseNftInsertHandle extracts the rule handle from the JSON output of `nft --echo --json insert rule ...`.
