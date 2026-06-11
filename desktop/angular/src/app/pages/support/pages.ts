@@ -64,7 +64,7 @@ export const supportTypes: PageSections[] = [
       {
         type: 'link',
         title: 'Join us on Discord',
-        url: 'https://discord.gg/safing',
+        url: 'https://safing.io/discord',
         shortHelp: 'Get help from the community and our AI bot on Discord.'
       },
       {
