@@ -103,6 +103,56 @@ func TestPerformUpdate(t *testing.T) {
 	}
 }
 
+func TestPerformUpdateRepairsCorruptedResourcesAtSameVersion(t *testing.T) {
+	t.Parallel()
+
+	stub := &testInstance{}
+	installedDir := t.TempDir()
+	updateDir := t.TempDir()
+	purgeDir := t.TempDir()
+	published := time.Now()
+
+	if err := GenerateMockFolder(installedDir, "Test", "1.0.0", published); err != nil {
+		t.Fatal(err)
+	}
+	if err := GenerateMockFolder(updateDir, "Test", "1.0.0", published); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(installedDir, "portmaster"), []byte("corrupted"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	updater, err := New(stub, "Test", Config{
+		Name:              "Test",
+		Directory:         installedDir,
+		DownloadDirectory: updateDir,
+		PurgeDirectory:    purgeDir,
+		IndexFile:         "index.json",
+		AutoDownload:      true,
+		AutoApply:         true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updater.corruptedInstallation == nil {
+		t.Fatal("expected corrupted installation to be detected")
+	}
+
+	m := mgr.New("updates repair test")
+	if err := m.Do("repair corrupted resources", func(w *mgr.WorkerCtx) error {
+		return updater.updateAndUpgrade(w, nil, false, false)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if updater.corruptedInstallation != nil {
+		t.Fatalf("expected corruption state to be cleared, got %v", updater.corruptedInstallation)
+	}
+	if err := updater.index.VerifyArtifacts(installedDir); err != nil {
+		t.Fatalf("expected installed artifacts to be repaired: %v", err)
+	}
+}
+
 // GenerateMockFolder generates mock index folder for testing.
 func GenerateMockFolder(dir, name, version string, published time.Time) error {
 	// Make sure dir exists
