@@ -179,7 +179,7 @@ var dataDir
 
   ; remove the registry entry for the autostart
   DetailPrint "Removing registry entry for autostart"
-  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+  DeleteRegValue HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Run" "Portmaster"
 
   ; delete data files
   Delete  /REBOOTOK "$COMMONPROGRAMDATA\Portmaster\databases\history.db"
