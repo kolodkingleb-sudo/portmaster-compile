@@ -119,6 +119,7 @@ func startListener(ip net.IP, port uint16, first bool) {
 			),
 			Net:     "udp",
 			Handler: dns.HandlerFunc(handleRequestAsWorker),
+			UDPSize: dns.MaxMsgSize, // without this, one oversized datagram kills the listener on Windows
 		}
 
 		// Register stop function.
@@ -151,6 +152,11 @@ func startListener(ip net.IP, port uint16, first bool) {
 			module.states.Remove(eventIDListenerFailed)
 		}
 
+		started := false
+		dnsServer.NotifyStartedFunc = func() {
+			started = true
+		}
+
 		// Start listening.
 		log.Infof("nameserver: starting to listen on %s", dnsServer.Addr)
 		err := dnsServer.ListenAndServe()
@@ -159,8 +165,14 @@ func startListener(ip net.IP, port uint16, first bool) {
 			if module.mgr.IsDone() {
 				return nil
 			}
-			log.Warningf("nameserver: failed to listen on %s: %s", dnsServer.Addr, err)
-			handleListenError(err, ip, port, first)
+
+			if !started {
+				// Failed to start listening. Probably some other application is already listening on the same port.
+				log.Warningf("nameserver: failed to start listening on %s: %s", dnsServer.Addr, err)
+				handleListenError(err, ip, port, first)
+			} else {
+				log.Warningf("nameserver: failed to serve on %s: %s", dnsServer.Addr, err)
+			}
 		}
 		return err
 	})
