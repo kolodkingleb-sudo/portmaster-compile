@@ -174,9 +174,9 @@ func (m *Manager) manageWorker(name string, fn func(w *WorkerCtx) error) {
 	w := &WorkerCtx{
 		name:     name,
 		workFunc: fn,
+		ctx:      m.ctx,
 		logger:   m.logger.With("worker", name),
 	}
-	w.ctx = m.ctx
 
 	m.workerStart(w)
 	defer m.workerDone(w)
@@ -320,8 +320,12 @@ func (m *Manager) do(name string, isStopWorker bool, fn func(w *WorkerCtx) error
 
 func (m *Manager) runWorker(w *WorkerCtx, fn func(w *WorkerCtx) error) (panicInfo string, err error) {
 	// Create worker context that is canceled when worker finished or dies.
-	w.ctx, w.cancelCtx = context.WithCancel(w.ctx)
-	defer w.Cancel()
+	runCtx := &WorkerCtx{
+		workerMgr: w.workerMgr,
+		logger:    w.logger,
+	}
+	runCtx.ctx, runCtx.cancelCtx = context.WithCancel(w.ctx)
+	defer runCtx.Cancel()
 
 	// Recover from panic.
 	defer func() {
@@ -358,7 +362,7 @@ func (m *Manager) runWorker(w *WorkerCtx, fn func(w *WorkerCtx) error) (panicInf
 		}
 	}()
 
-	err = fn(w)
+	err = fn(runCtx)
 	return //nolint
 }
 
