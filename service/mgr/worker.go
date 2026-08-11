@@ -185,6 +185,7 @@ func (m *Manager) manageWorker(name string, fn func(w *WorkerCtx) error) {
 	failCnt := 0
 
 	for {
+		runStart := time.Now()
 		panicInfo, err := m.runWorker(w, fn)
 		switch {
 		case err == nil:
@@ -213,6 +214,12 @@ func (m *Manager) manageWorker(name string, fn func(w *WorkerCtx) error) {
 					)
 				}
 				return
+			}
+
+			// Reset backoff if the worker ran long enough to be considered healthy.
+			if time.Since(runStart) > time.Minute {
+				backoff = time.Second
+				failCnt = 0
 			}
 
 			// Count failure and increase backoff (up to limit),
