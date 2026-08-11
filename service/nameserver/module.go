@@ -155,6 +155,7 @@ func startListener(ip net.IP, port uint16, first bool) {
 		started := false
 		dnsServer.NotifyStartedFunc = func() {
 			started = true
+			deleteListenErrorNotification(first)
 		}
 
 		// Start listening.
@@ -169,7 +170,7 @@ func startListener(ip net.IP, port uint16, first bool) {
 			if !started {
 				// Failed to start listening. Probably some other application is already listening on the same port.
 				log.Warningf("nameserver: failed to start listening on %s: %s", dnsServer.Addr, err)
-				handleListenError(err, ip, port, first)
+				showListenErrorNotification(err, ip, port, first)
 			} else {
 				log.Warningf("nameserver: failed to serve on %s: %s", dnsServer.Addr, err)
 			}
@@ -178,7 +179,21 @@ func startListener(ip net.IP, port uint16, first bool) {
 	})
 }
 
-func handleListenError(err error, ip net.IP, port uint16, primaryListener bool) {
+func deleteListenErrorNotification(primaryListener bool) {
+	// Create suffix for secondary listener
+	var secondaryEventIDSuffix string
+	if !primaryListener {
+		secondaryEventIDSuffix = "-secondary"
+	}
+	// remove all possible notifications related to current listener (primary or secondary)
+	for _, eventID := range []string{eventIDConflictingService + secondaryEventIDSuffix, eventIDListenerFailed + secondaryEventIDSuffix} {
+		if n := notifications.Get(eventID); n != nil {
+			n.Delete()
+		}
+	}
+}
+
+func showListenErrorNotification(err error, ip net.IP, port uint16, primaryListener bool) {
 	var n *notifications.Notification
 
 	// Create suffix for secondary listener
