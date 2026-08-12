@@ -382,12 +382,12 @@ func queryMulticastDNS(ctx context.Context, q *Query) (*RRCache, error) {
 
 	// save question
 	questionsLock.Lock()
-	defer questionsLock.Unlock()
 	questions[dnsQuery.MsgHdr.Id] = &savedQuestion{
 		question: dnsQuery.Question[0],
 		expires:  time.Now().Add(10 * time.Second),
 		response: response,
 	}
+	questionsLock.Unlock()
 
 	// pack qeury
 	buf, err := dnsQuery.Pack()
