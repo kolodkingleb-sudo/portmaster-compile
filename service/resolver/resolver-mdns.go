@@ -410,27 +410,36 @@ func queryMulticastDNS(ctx context.Context, q *Query) (*RRCache, error) {
 	}
 
 	// send queries
+	var anySent bool
+
 	if unicast4Conn != nil && uint16(q.QType) != dns.TypeAAAA {
 		err = unicast4Conn.SetWriteDeadline(time.Now().Add(1 * time.Second))
 		if err != nil {
-			return nil, fmt.Errorf("failed to configure query (set timout): %w", err)
-		}
-
-		_, err = unicast4Conn.WriteToUDP(buf, &net.UDPAddr{IP: net.IPv4(224, 0, 0, 251), Port: 5353})
-		if err != nil {
-			return nil, fmt.Errorf("failed to send query: %w", err)
+			log.Tracer(ctx).Warningf("resolver: failed to set write deadline for mDNS IPv4 socket: %s", err)
+		} else {
+			_, err = unicast4Conn.WriteToUDP(buf, &net.UDPAddr{IP: net.IPv4(224, 0, 0, 251), Port: 5353})
+			if err != nil {
+				log.Tracer(ctx).Warningf("resolver: failed to send mDNS query via IPv4: %s", err)
+			} else {
+				anySent = true
+			}
 		}
 	}
 	if unicast6Conn != nil && uint16(q.QType) != dns.TypeA {
 		err = unicast6Conn.SetWriteDeadline(time.Now().Add(1 * time.Second))
 		if err != nil {
-			return nil, fmt.Errorf("failed to configure query (set timout): %w", err)
+			log.Tracer(ctx).Warningf("resolver: failed to set write deadline for mDNS IPv6 socket: %s", err)
+		} else {
+			_, err = unicast6Conn.WriteToUDP(buf, &net.UDPAddr{IP: net.IP([]byte{0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb}), Port: 5353})
+			if err != nil {
+				log.Tracer(ctx).Warningf("resolver: failed to send mDNS query via IPv6: %s", err)
+			} else {
+				anySent = true
+			}
 		}
-
-		_, err = unicast6Conn.WriteToUDP(buf, &net.UDPAddr{IP: net.IP([]byte{0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb}), Port: 5353})
-		if err != nil {
-			return nil, fmt.Errorf("failed to send query: %w", err)
-		}
+	}
+	if !anySent {
+		return nil, errors.New("failed to send mDNS query on any interface")
 	}
 
 	// wait for response or timeout
