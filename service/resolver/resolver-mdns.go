@@ -332,7 +332,7 @@ func handleMDNSMessages(ctx context.Context, messages chan *dns.Msg) error { //n
 				}
 				rrCache = &RRCache{
 					Domain:   v.Header().Name,
-					Question: dns.Type(v.Header().Class),
+					Question: dns.Type(v.Header().Rrtype),
 					RCode:    dns.RcodeSuccess,
 					Answer:   []dns.RR{v},
 					Resolver: mDNSResolver.Info.Copy(),
