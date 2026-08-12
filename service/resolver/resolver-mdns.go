@@ -197,7 +197,21 @@ func handleMDNSMessages(ctx context.Context, messages chan *dns.Msg) error { //n
 					savedQ = nil
 				}
 			} else if savedQ != nil {
-				question = &savedQ.question
+				// No question section — verify the response actually answers our query.
+				// A non-compliant device may reuse our message ID, poisoning our cache.
+				var answerMatchesPendingQuery bool
+				for _, entry := range message.Answer {
+					// DNS names are case-insensitive per RFC 1035 §2.3.3
+					if strings.EqualFold(entry.Header().Name, savedQ.question.Name) {
+						answerMatchesPendingQuery = true
+						break
+					}
+				}
+				if answerMatchesPendingQuery {
+					question = &savedQ.question
+				} else {
+					savedQ = nil // treat as passive scavenge only
+				}
 			}
 
 			if question != nil {
