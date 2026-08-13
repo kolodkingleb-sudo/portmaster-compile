@@ -108,27 +108,20 @@ func GenerateMockFolder(dir, name, version string, published time.Time) error {
 	// Make sure dir exists
 	_ = os.MkdirAll(dir, 0o750)
 
-	// Create empty files
-	file, err := os.Create(filepath.Join(dir, "portmaster"))
-	if err != nil {
-		return err
+	// Each file gets unique content so their SHA256 hashes differ.
+	// gatherExistingFiles keys files by hash, so identical content would
+	// cause all but one file to be lost from the lookup map.
+	mockFiles := map[string][]byte{
+		"portmaster":      []byte("mock:portmaster"),
+		"portmaster-core": []byte("mock:portmaster-core"),
+		"portmaster.zip":  []byte("mock:portmaster.zip"),
+		"assets.zip":      []byte("mock:assets.zip"),
 	}
-	_ = file.Close()
-	file, err = os.Create(filepath.Join(dir, "portmaster-core"))
-	if err != nil {
-		return err
+	for filename, content := range mockFiles {
+		if err := os.WriteFile(filepath.Join(dir, filename), content, 0o600); err != nil {
+			return err
+		}
 	}
-	_ = file.Close()
-	file, err = os.Create(filepath.Join(dir, "portmaster.zip"))
-	if err != nil {
-		return err
-	}
-	_ = file.Close()
-	file, err = os.Create(filepath.Join(dir, "assets.zip"))
-	if err != nil {
-		return err
-	}
-	_ = file.Close()
 
 	index, err := GenerateIndexFromDir(dir, IndexScanConfig{
 		Name:    name,
