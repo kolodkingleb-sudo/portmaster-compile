@@ -51,6 +51,8 @@ func tryListUpdate(ctx context.Context) error {
 		return err
 	}
 
+	// Clear the failure state on any successful update check.
+	module.states.Remove(filterlistsUpdateFailed)
 	return nil
 }
 

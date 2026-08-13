@@ -240,6 +240,14 @@ func (u *Updater) updateAndUpgrade(w *mgr.WorkerCtx, indexURLs []string, ignoreV
 	}
 	defer u.isUpdateRunning.UnSet()
 
+	// Resource updates can repair themselves without a restart. Re-apply the
+	// signed current index when startup verification found local corruption.
+	repairCorruptedResources := u.corruptedInstallation != nil && u.cfg.AutoApply && !u.cfg.NeedsRestart
+	if repairCorruptedResources {
+		ignoreVersion = true
+		log.Warningf("updates/%s: repairing corrupted resources", u.cfg.Name)
+	}
+
 	// Create a new downloader.
 	downloader := NewDownloader(u, indexURLs)
 
@@ -396,6 +404,10 @@ func (u *Updater) updateAndUpgrade(w *mgr.WorkerCtx, indexURLs []string, ignoreV
 	err = u.cleanupAfterUpgrade()
 	if err != nil {
 		log.Debugf("updates/%s: failed to clean up after upgrade: %s", u.cfg.Name, err)
+	}
+	if repairCorruptedResources {
+		u.corruptedInstallation = nil
+		u.states.Remove(corruptInstallationNotificationID)
 	}
 	u.EventResourcesUpdated.Submit(struct{}{})
 
