@@ -187,19 +187,23 @@
       </span>
     </div>
 
-    <app-menu-item (click)="downloadUpdates($event)">Check for Updates</app-menu-item>
-    <app-menu-item (click)="openChangeLog()">View Changelog</app-menu-item>
-    <app-menu-item (click)="reloadUI($event)">Reload UI</app-menu-item>
-    <app-menu-item *appExpertiseLevel="'developer'" (click)="showIntro()">
+    <app-menu-item (click)="downloadUpdates($event)" sfng-tooltip="Trigger a check for available Portmaster and intelligence updates">Check for Updates</app-menu-item>
+    <app-menu-item (click)="openChangeLog()" sfng-tooltip="Browse all Portmaster release notes on GitHub">View Changelog</app-menu-item>
+    <hr/>
+    <app-menu-item (click)="reloadUI($event)" sfng-tooltip="Reload the Portmaster UI without restarting the service">Reload UI</app-menu-item>
+    <app-menu-item *appExpertiseLevel="'developer'" (click)="showIntro()" sfng-tooltip="Replay the welcome introduction screens">
       Show Intro Screen
     </app-menu-item>
-    <app-menu-item (click)="reinitSPN($event)">Re-Initialize SPN</app-menu-item>
-    <app-menu-item (click)="logoutCompletely($event)">Logout Completely</app-menu-item>
-    <app-menu-item (click)="resetBroadcastState()">Reset Notifications State</app-menu-item>
-    <app-menu-item (click)="clearDNSCache($event)">Clear DNS Cache</app-menu-item>
-    <app-menu-item (click)="openDataDir($event)">Open Data Directory</app-menu-item>
-    <app-menu-item (click)="copyDebugInfo($event)">Copy Debug Info</app-menu-item>
-    <app-menu-item (click)="cleanupHistory($event)">Cleanup Network History</app-menu-item>
+    <hr/>
+    <app-menu-item (click)="reinitSPN($event)" sfng-tooltip="Stop the SPN, clear all caches, and restart it; account and settings are unchanged">Re-Initialize SPN</app-menu-item>
+    <app-menu-item (click)="logoutCompletely($event)" sfng-tooltip="Sign out and purge all local SPN account data from this device">Logout Completely</app-menu-item>
+    <hr/>
+    <app-menu-item (click)="resetBroadcastState()" sfng-tooltip="Clear the dismissed state so all notifications appear again">Reset Notifications State</app-menu-item>
+    <app-menu-item (click)="clearDNSCache($event)" sfng-tooltip="Flush the local DNS resolver cache">Clear DNS Cache</app-menu-item>
+    <app-menu-item (click)="cleanupHistory($event)" sfng-tooltip="Apply the history retention settings to remove outdated connection records">Cleanup Network History</app-menu-item>
+    <hr/>
+    <app-menu-item (click)="openDataDir($event)" sfng-tooltip="Open the folder where Portmaster stores its data">Open Data Directory</app-menu-item>
+    <app-menu-item (click)="copyDebugInfo($event)" sfng-tooltip="Copy diagnostic information to the clipboard for support">Copy Debug Info</app-menu-item>
   </app-menu>
 
   <!-- Pause Menu -->
