@@ -1,6 +1,8 @@
 module github.com/safing/portmaster
 
-go 1.24.0
+go 1.26.0
+
+toolchain go1.26.3
 
 require (
 	github.com/VictoriaMetrics/metrics v1.40.2
