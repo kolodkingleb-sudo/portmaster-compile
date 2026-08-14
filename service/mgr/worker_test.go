@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+var (
+	errDeliberateFailure = errors.New("deliberate failure")
+	errFirstRunFailure   = errors.New("first-run failure")
+)
+
 func TestWorkerInfo(t *testing.T) { //nolint:paralleltest
 	mgr := New("test")
 	mgr.Go("test func one", testFunc1)
@@ -60,7 +65,7 @@ func TestRunWorkerDoesNotMutateCallerContext(t *testing.T) { //nolint:parallelte
 		ctx:    m.Ctx(),
 		logger: m.logger.With("worker", "test"),
 	}
-	wantErr := errors.New("deliberate failure")
+	wantErr := errDeliberateFailure
 
 	for _, tc := range []struct {
 		name string
@@ -91,7 +96,7 @@ func TestManagerGoRetryReceivesLiveContext(t *testing.T) { //nolint:paralleltest
 	m.Go("retry-test", func(w *WorkerCtx) error {
 		switch runs.Add(1) {
 		case 1:
-			return errors.New("first-run failure")
+			return errFirstRunFailure
 		case 2:
 			select {
 			case <-w.Done():

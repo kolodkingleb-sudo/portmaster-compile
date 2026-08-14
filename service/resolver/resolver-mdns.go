@@ -17,6 +17,8 @@ import (
 	"github.com/safing/portmaster/service/network/netutils"
 )
 
+var errNoMDNSInterfaceSent = errors.New("failed to send mDNS query on any interface")
+
 // DNS Classes.
 const (
 	DNSClassMulticast = dns.ClassINET | 1<<15
@@ -439,7 +441,7 @@ func queryMulticastDNS(ctx context.Context, q *Query) (*RRCache, error) {
 		}
 	}
 	if !anySent {
-		return nil, errors.New("failed to send mDNS query on any interface")
+		return nil, errNoMDNSInterfaceSent
 	}
 
 	// wait for response or timeout
