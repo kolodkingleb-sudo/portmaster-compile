@@ -438,6 +438,9 @@ func StopNfqueueInterception() error {
 	// Signal shutdown to packet handler
 	defer close(shutdownSignal)
 
+	// Must run before Destroy() to stop queuing new connections and flush conntrack while the queues are still alive.
+	err := DeactivateNfqueueFirewall()
+
 	if out4Queue != nil {
 		out4Queue.Destroy()
 	}
@@ -451,7 +454,6 @@ func StopNfqueueInterception() error {
 		in6Queue.Destroy()
 	}
 
-	err := DeactivateNfqueueFirewall()
 	if err != nil {
 		return fmt.Errorf("interception: error while deactivating nfqueue: %w", err)
 	}
