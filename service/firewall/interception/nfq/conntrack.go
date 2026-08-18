@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"sync"
 
 	ct "github.com/florianl/go-conntrack"
 
@@ -16,8 +15,7 @@ import (
 	pmpacket "github.com/safing/portmaster/service/network/packet"
 )
 
-var nfct *ct.Nfct     // Conntrack handler. NFCT: Network Filter Connection Tracking.
-var nfctMu sync.Mutex // serialises all nfct operations; concurrent Query/Get and Delete deadlock on the netlink conn's RWMutex.
+var nfct *ct.Nfct // Conntrack handler. NFCT: Network Filter Connection Tracking.
 
 // InitNFCT initializes the network filter conntrack library.
 func InitNFCT() error {
@@ -56,9 +54,6 @@ func TeardownNFCT() {
 // Connections already processed by Portmaster carry a non-zero connmark and
 // are handled via CONNMARK --restore-mark; they are unaffected.
 func DeleteUnmarkedConnections() error {
-	nfctMu.Lock()
-	defer nfctMu.Unlock()
-
 	if nfct == nil {
 		return errors.New("nfq: nfct not initialized")
 	}
@@ -126,9 +121,6 @@ func isLoopbackConnection(c ct.Con) bool {
 
 // DeleteAllMarkedConnection deletes all marked entries from the conntrack table.
 func DeleteAllMarkedConnection() error {
-	nfctMu.Lock()
-	defer nfctMu.Unlock()
-
 	if nfct == nil {
 		return errors.New("nfq: nfct not initialized")
 	}
@@ -181,9 +173,6 @@ func deleteMarkedConnections(nfct *ct.Nfct, f ct.Family) (deleted int) {
 
 // DeleteMarkedConnection removes a specific connection from the conntrack table.
 func DeleteMarkedConnection(conn *network.Connection) error {
-	nfctMu.Lock()
-	defer nfctMu.Unlock()
-
 	if nfct == nil {
 		return errors.New("nfq: nfct not initialized")
 	}
