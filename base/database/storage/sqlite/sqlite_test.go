@@ -216,16 +216,16 @@ func TestSQLite(t *testing.T) {
 	}
 }
 
-func TestMigrationTimezoneRoundTrip(t *testing.T) {
+func TestMigrationTimezoneRoundTrip(t *testing.T) { //nolint:paralleltest
 	// We intentionally do not call t.Parallel() here,
 	// because this test changes the global time.Local variable, which can affect other tests if run in parallel.
 
 	// Simulate a fixed-offset zone: Go abbreviates it "UTC+2", which contains digits
 	// that cause time.Parse("... MST", ...) to fail when sql-migrate reads back the
 	// applied_at timestamp it wrote into gorp_migrations on the previous open.
-	origLocal := time.Local
-	time.Local = time.FixedZone("UTC+2", 2*60*60)
-	t.Cleanup(func() { time.Local = origLocal })
+	origLocal := time.Local //nolint:gosmopolitan
+	time.Local = time.FixedZone("UTC+2", 2*60*60) //nolint:gosmopolitan
+	t.Cleanup(func() { time.Local = origLocal })   //nolint:gosmopolitan
 
 	testDir := t.TempDir()
 
